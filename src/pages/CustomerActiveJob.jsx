@@ -160,6 +160,38 @@ export default function CustomerActiveJob({ jobId }) {
           <QuoteApproval job={job} />
         )}
 
+        {/* TEST MODE OVERRIDE */}
+        {job.status !== 'pending' && (
+          <div style={{ marginTop: '24px', padding: '16px', border: '1px dashed #3A3A3C', borderRadius: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#8E8E93', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              Test Mode (Simulate Mechanic)
+            </div>
+            
+            {job.status === 'accepted' && (
+              <button onClick={() => updateJobStatus(job.id, 'diagnosing')} style={testBtnStyle}>Simulate: Arrived</button>
+            )}
+            {job.status === 'diagnosing' && (
+              <button onClick={() => updateJobStatus(job.id, 'repairing')} style={testBtnStyle}>Simulate: Start repair</button>
+            )}
+            {job.status === 'repairing' && (
+              <button onClick={async () => {
+                const { doc, updateDoc } = await import('firebase/firestore');
+                const { db } = await import('../firebase');
+                await updateDoc(doc(db, 'jobs', job.id), {
+                  status: 'completed',
+                  cost: { items: [{ name: 'Diagnostics & Service', price: '12000' }], total: 12000, notes: 'Test mode' }
+                });
+              }} style={testBtnStyle}>Simulate: Submit Quote (₦12,000)</button>
+            )}
+            {job.status === 'completed' && (
+              <div style={{ fontSize: '13px', color: '#8E8E93' }}>Please approve the quote above.</div>
+            )}
+            {job.status === 'approved' && (
+              <button onClick={() => updateJobStatus(job.id, 'finished')} style={testBtnStyle}>Finish & Return to Home</button>
+            )}
+          </div>
+        )}
+
         <style>{`
           @keyframes sweep {
             0%   { transform: translateX(-150%); }
@@ -170,6 +202,14 @@ export default function CustomerActiveJob({ jobId }) {
     </div>
   );
 }
+
+const testBtnStyle = {
+  width: '100%', padding: '12px',
+  background: '#2C2C2E', color: '#FFFFFF',
+  border: '1px solid #3A3A3C', borderRadius: '6px',
+  fontSize: '13px', fontWeight: '500',
+  cursor: 'pointer', fontFamily: "'Inter', sans-serif"
+};
 
 function QuoteApproval({ job }) {
   const total = job.cost?.total || 0;
