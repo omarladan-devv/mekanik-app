@@ -35,10 +35,12 @@ export function listenToActiveJobForCustomer(customerId, callback) {
   const q = query(collection(db, 'jobs'), where('customerId', '==', customerId));
   return onSnapshot(q, (snapshot) => {
     const ACTIVE = ['pending','accepted','diagnosing','repairing','completed','approved'];
-    const active = snapshot.docs
+    // Sort by createdAt descending so the most recent job wins
+    const jobs = snapshot.docs
       .map(d => ({ id: d.id, ...d.data() }))
-      .find(j => ACTIVE.includes(j.status));
-    callback(active || null);
+      .filter(j => ACTIVE.includes(j.status))
+      .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    callback(jobs[0] || null);
   });
 }
 

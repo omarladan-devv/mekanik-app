@@ -44,14 +44,17 @@ export default function MapView({ center, markers = [], route = null, zoom = 14,
         disableDefaultUI: true,
         zoomControl: true,
         styles: [
-          { elementType: 'geometry',        stylers: [{ color: '#1e2433' }] },
-          { elementType: 'labels.text.fill',stylers: [{ color: '#8a94a6' }] },
-          { elementType: 'labels.text.stroke',stylers:[{ color: '#1e2433' }] },
-          { featureType: 'road',              elementType: 'geometry',       stylers: [{ color: '#2d3450' }] },
-          { featureType: 'road',              elementType: 'geometry.stroke', stylers: [{ color: '#1a1f30' }] },
-          { featureType: 'road.highway',      elementType: 'geometry',       stylers: [{ color: '#ff7a1a' }] },
-          { featureType: 'water',             elementType: 'geometry',       stylers: [{ color: '#111620' }] },
-          { featureType: 'poi',               elementType: 'labels',         stylers: [{ visibility: 'off' }] },
+          { elementType: 'geometry',            stylers: [{ color: '#1C1C1E' }] },
+          { elementType: 'labels.text.fill',    stylers: [{ color: '#8E8E93' }] },
+          { elementType: 'labels.text.stroke',  stylers: [{ color: '#1C1C1E' }] },
+          { featureType: 'road',                elementType: 'geometry',        stylers: [{ color: '#2C2C2E' }] },
+          { featureType: 'road',                elementType: 'geometry.stroke', stylers: [{ color: '#000000' }] },
+          { featureType: 'road.highway',        elementType: 'geometry',        stylers: [{ color: '#3A3A3C' }] },
+          { featureType: 'road.highway',        elementType: 'geometry.stroke', stylers: [{ color: '#1C1C1E' }] },
+          { featureType: 'water',               elementType: 'geometry',        stylers: [{ color: '#000000' }] },
+          { featureType: 'poi',                 elementType: 'labels',          stylers: [{ visibility: 'off' }] },
+          { featureType: 'poi.park',            elementType: 'geometry',        stylers: [{ color: '#1C1C1E' }] },
+          { featureType: 'transit',             elementType: 'labels',          stylers: [{ visibility: 'off' }] },
         ],
       });
       gmapRef.current = gmap;
@@ -109,7 +112,7 @@ export default function MapView({ center, markers = [], route = null, zoom = 14,
     const ds = new window.google.maps.DirectionsService();
     const dr = new window.google.maps.DirectionsRenderer({
       suppressMarkers: true,
-      polylineOptions: { strokeColor: '#ff7a1a', strokeWeight: 5, strokeOpacity: 0.85 },
+      polylineOptions: { strokeColor: '#276EF1', strokeWeight: 5, strokeOpacity: 0.9 },
     });
     dr.setMap(gmap);
     rendRef.current = dr;
