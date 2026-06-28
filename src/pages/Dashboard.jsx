@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import CustomerDashboard from './CustomerDashboard';
 import MechanicDashboard from './MechanicDashboard';
 import CustomerAccount from './CustomerAccount';
+import PartsMarketplace from './PartsMarketplace';
 
 export default function Dashboard() {
   const { currentUser, userData, logout } = useAuth();
@@ -64,7 +65,9 @@ export default function Dashboard() {
           {isMech ? (
              <MechanicDashboard />
           ) : (
-             activeTab === 'home' ? <CustomerDashboard /> : <CustomerAccount onLogout={handleLogout} />
+             activeTab === 'home'    ? <CustomerDashboard /> :
+             activeTab === 'parts'   ? <PartsMarketplace /> :
+                                       <CustomerAccount onLogout={handleLogout} />
           )}
         </div>
       </div>
@@ -80,6 +83,16 @@ export default function Dashboard() {
               </svg>
             </span>
             <span>Home</span>
+          </div>
+          <div className={`bottom-nav-item ${activeTab === 'parts' ? 'active' : ''}`} onClick={() => setActiveTab('parts')}>
+            <span className="bottom-nav-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <path d="M16 10a4 4 0 01-8 0"/>
+              </svg>
+            </span>
+            <span>Parts</span>
           </div>
           <div className={`bottom-nav-item ${activeTab === 'account' ? 'active' : ''}`} onClick={() => setActiveTab('account')}>
             <span className="bottom-nav-icon">

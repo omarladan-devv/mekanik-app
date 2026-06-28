@@ -1,4 +1,4 @@
-import { collection, addDoc, doc, updateDoc, query, where, onSnapshot, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // ==========================================
@@ -78,3 +78,67 @@ export async function updateJobStatus(jobId, newStatus) {
 export async function updateMechanicStatus(mechanicId, status) {
   await updateDoc(doc(db, 'users', mechanicId), { status });
 }
+
+// ==========================================
+// PARTS MARKETPLACE
+// ==========================================
+
+export async function getParts(category) {
+  let q;
+  if (category && category !== 'all') {
+    q = query(collection(db, 'parts'), where('category', '==', category));
+  } else {
+    q = collection(db, 'parts');
+  }
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export function listenToParts(callback) {
+  return onSnapshot(collection(db, 'parts'), snapshot => {
+    callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+  });
+}
+
+export function listenToMyListings(sellerId, callback) {
+  const q = query(collection(db, 'parts'), where('sellerId', '==', sellerId));
+  return onSnapshot(q, snapshot => {
+    callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+  });
+}
+
+export async function addPart(sellerId, sellerName, data) {
+  const ref = await addDoc(collection(db, 'parts'), {
+    sellerId,
+    sellerName,
+    ...data,
+    stock: Number(data.stock) || 1,
+    price: Number(data.price) || 0,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function deletePart(partId) {
+  await deleteDoc(doc(db, 'parts', partId));
+}
+
+export async function createOrder(buyerId, part, quantity) {
+  const total = part.price * quantity;
+  const ref = await addDoc(collection(db, 'orders'), {
+    buyerId,
+    partId: part.id,
+    partName: part.name,
+    sellerId: part.sellerId,
+    sellerName: part.sellerName,
+    quantity,
+    total,
+    status: 'pending',
+    createdAt: serverTimestamp(),
+  });
+  // Decrement stock
+  const newStock = Math.max(0, (part.stock || 0) - quantity);
+  await updateDoc(doc(db, 'parts', part.id), { stock: newStock });
+  return ref.id;
+}
+

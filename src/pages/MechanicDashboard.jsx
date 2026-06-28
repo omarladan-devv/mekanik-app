@@ -2,13 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { listenToPendingJobs, listenToActiveJobForMechanic, acceptJob, updateMechanicStatus } from '../services/db';
 import MechanicActiveJob from './MechanicActiveJob';
+import MyListings from './MyListings';
 
 export default function MechanicDashboard() {
   const { currentUser, userData } = useAuth();
   const [pendingJobs, setPendingJobs] = useState([]);
-  const [activeJob,   setActiveJob]   = useState(undefined); // undefined = checking
+  const [activeJob,   setActiveJob]   = useState(undefined);
   const [avail, setAvail]             = useState(userData?.status || 'offline');
   const [accepting, setAccepting]     = useState(null);
+  const [showListings, setShowListings] = useState(false);
 
   // Watch for active job assigned to this mechanic
   useEffect(() => {
@@ -50,6 +52,9 @@ export default function MechanicDashboard() {
   // Active job view
   if (activeJob) return <MechanicActiveJob jobId={activeJob.id} />;
 
+  // My Listings overlay
+  if (showListings) return <MyListings onBack={() => setShowListings(false)} />;
+
   // ─── Main dashboard ───
   const AVAIL = [
     { k:'online',  lbl:'Online' },
@@ -89,20 +94,27 @@ export default function MechanicDashboard() {
         borderRadius:'12px',
         padding:'20px', marginBottom:'16px',
       }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
           <div style={{
-            width:'48px', height:'48px', borderRadius:'50%', flexShrink:0,
-            background:'var(--surface2)',
-            display:'grid', placeItems:'center', fontSize:'18px', fontWeight:'700', color:'var(--text)'
+            width: '48px', height: '48px', borderRadius: '50%', flexShrink: 0,
+            background: 'var(--surface2)',
+            display: 'grid', placeItems: 'center', fontSize: '18px', fontWeight: '700', color: 'var(--text)'
           }}>
             {userData?.name?.[0] || 'M'}
           </div>
-          <div>
-            <div style={{ fontWeight:'600', fontSize:'17px' }}>{userData?.name}</div>
-            <div style={{ fontSize:'13px', color:'var(--text2)', marginTop:'2px' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: '600', fontSize: '17px' }}>{userData?.name}</div>
+            <div style={{ fontSize: '13px', color: 'var(--text2)', marginTop: '2px' }}>
               {userData?.rating || '5.0'} stars  ·  {userData?.jobsDone || 0} jobs completed
             </div>
           </div>
+          <button onClick={() => setShowListings(true)} style={{
+            border: '1px solid var(--border)', background: 'none', borderRadius: '8px',
+            padding: '8px 12px', cursor: 'pointer', color: 'var(--text2)',
+            fontSize: '13px', fontWeight: '500', fontFamily: 'Inter, sans-serif', flexShrink: 0,
+          }}>
+            My Parts
+          </button>
         </div>
 
         {/* Availability toggle */}
