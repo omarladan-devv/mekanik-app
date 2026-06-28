@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { createJobRequest, listenToActiveJobForCustomer, getAvailableMechanics } from '../services/db';
+import { createJobRequest, listenToActiveJobForCustomer, getAvailableMechanics, acceptJob } from '../services/db';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import CustomerActiveJob from './CustomerActiveJob';
@@ -60,6 +60,12 @@ export default function CustomerDashboard() {
       const loc   = await getLocation();
       const jobId = await createJobRequest(currentUser.uid, selectedService, mechanicId);
       if (loc) await updateDoc(doc(db, 'jobs', jobId), { customerLocation: loc });
+      
+      // AUTO-MATCH FOR TESTING: Automatically make the target mechanic accept the job after 2 seconds
+      setTimeout(() => {
+        acceptJob(jobId, mechanicId).catch(console.error);
+      }, 2000);
+
     } catch (err) {
       console.error(err);
       alert('Failed to request mechanic. Please try again.');
