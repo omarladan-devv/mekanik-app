@@ -2,200 +2,269 @@ import React, { useEffect, useState } from 'react';
 import { listenToActiveJob, updateJobStatus } from '../services/db';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import MapView from '../components/MapView';
 
-const STATUS_LABELS = {
-  pending:    { title: 'Finding a mechanic nearby',          sub: 'Searching for a professional near you.',                         color: '#ff6a3d' },
-  accepted:   { title: 'Mechanic is on the way',             sub: 'A verified professional is heading to your location.',           color: '#16a34a' },
-  diagnosing: { title: 'Mechanic has arrived',               sub: 'Your mechanic is now diagnosing your vehicle.',                  color: '#0fb5a4' },
-  repairing:  { title: 'Repair in progress',                 sub: 'Your mechanic is actively working on your car.',                 color: '#ff6a3d' },
-  completed:  { title: 'Repair complete — review the quote', sub: 'Your mechanic has submitted the final cost for your approval.',  color: '#16a34a' },
-  approved:   { title: 'Quote approved — payment complete',  sub: 'Your payment has been processed successfully.',                  color: '#16a34a' },
-};
-
+// Using a simplified map placeholder since this UI focuses on timeline/chat/payment
 export default function CustomerActiveJob({ jobId }) {
   const [job, setJob]               = useState(null);
-  const [myLocation, setMyLocation] = useState(null);
-  const [locError, setLocError]     = useState(false);
+  const [view, setView]             = useState('timeline'); // 'timeline', 'chat', 'payment'
+  const [paymentMethod, setPaymentMethod] = useState('Bank Transfer');
 
   useEffect(() => {
-    if (!navigator.geolocation) { setLocError(true); return; }
-    navigator.geolocation.getCurrentPosition(
-      pos => setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      ()  => { setLocError(true); setMyLocation({ lat: 9.0765, lng: 7.3986 }); },
-      { timeout: 8000 }
-    );
-  }, []);
-
-  useEffect(() => {
-    const unsub = listenToActiveJob(jobId, setJob);
+    const unsub = listenToActiveJob(jobId, (updatedJob) => {
+      setJob(updatedJob || null);
+      if (updatedJob?.status === 'completed' || updatedJob?.status === 'approved') {
+        setView('payment');
+      }
+    });
     return () => unsub();
   }, [jobId]);
 
   if (!job) return null;
 
-  const mechLocation = job.mechLocation || null;
-  const markers = [];
-  if (myLocation)   markers.push({ lat: myLocation.lat,   lng: myLocation.lng,   label: 'A', title: 'You' });
-  if (mechLocation) markers.push({ lat: mechLocation.lat, lng: mechLocation.lng, label: 'B', title: 'Mechanic' });
-  const route = (myLocation && mechLocation) ? { origin: mechLocation, destination: myLocation } : null;
-  const st = STATUS_LABELS[job.status] || STATUS_LABELS['pending'];
+  const mechanicName = job.mechanicName || 'Musa';
+  const mechanicInitial = mechanicName[0] || 'M';
 
-  return (
-    <div style={{ position:'fixed', inset:0, zIndex:200, display:'flex', flexDirection:'column', background:'var(--bg)', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-
-      {/* Full-screen map */}
-      <div style={{ flex:1, position:'relative' }}>
-        <MapView
-          center={myLocation || { lat:9.0765, lng:7.3986 }}
-          markers={markers} route={route} zoom={14}
-          style={{ height:'100%' }}
-        />
-
-        {/* Service badge */}
-        <div style={{
-          position:'absolute', top:'16px', left:'16px',
-          background:'rgba(14,19,32,.85)', backdropFilter:'blur(8px)',
-          borderRadius:'20px', padding:'8px 16px',
-          fontSize:'13px', fontWeight:'700', color:'#fff',
-        }}>
-          {job.service?.nm} Request
+  // --- TIMELINE VIEW ---
+  if (view === 'timeline') {
+    const statuses = ['accepted', 'diagnosing', 'repairing', 'completed'];
+    const currentIdx = statuses.indexOf(job.status);
+    
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 'calc(100vh - 40px)', background: 'var(--bg)', fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+          <div style={{ fontWeight: '800', fontSize: '20px', letterSpacing: '-.4px', color: 'var(--ink)' }}>{mechanicName} is on the way</div>
+          <button onClick={() => setView('chat')} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>💬</button>
         </div>
 
-        {locError && (
-          <div style={{ position:'absolute', top:'16px', right:'16px', fontSize:'12px', color:'#e8481f', fontWeight:'600', background:'rgba(255,255,255,.9)', padding:'4px 10px', borderRadius:'20px' }}>
-            GPS unavailable
+        {/* Circular Timer */}
+        <div style={{ margin: '0 auto 40px', position: 'relative', width: '160px', height: '160px' }}>
+          <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#e9edf2" strokeWidth="12" />
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#ff6a3d" strokeWidth="12" strokeDasharray="251.2" strokeDashoffset={251.2 * 0.4} strokeLinecap="round" />
+          </svg>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ fontWeight: '800', fontSize: '42px', color: 'var(--ink)', lineHeight: 1 }}>8</div>
+            <div style={{ fontSize: '11px', color: 'var(--slate)', fontWeight: '700', letterSpacing: '1px', fontFamily: "'JetBrains Mono',monospace", marginTop: '4px' }}>MIN AWAY</div>
           </div>
-        )}
-      </div>
-
-      {/* Bottom panel */}
-      <div style={{
-        background:'var(--surface)',
-        borderTopLeftRadius:'24px', borderTopRightRadius:'24px',
-        padding:'24px',
-        boxShadow:'0 -8px 32px -8px rgba(14,19,32,.15)',
-        maxHeight:'55vh', overflowY:'auto',
-      }}>
-        {/* Status */}
-        <div style={{ marginBottom:'20px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'4px' }}>
-            <span style={{ width:'10px', height:'10px', borderRadius:'50%', background:st.color, flexShrink:0, boxShadow:`0 0 0 3px ${st.color}30` }} />
-            <span style={{ fontWeight:'800', fontSize:'16px', color:'var(--ink)', letterSpacing:'-.2px' }}>{st.title}</span>
-          </div>
-          <div style={{ fontSize:'13px', color:'var(--slate)', marginLeft:'20px' }}>{st.sub}</div>
         </div>
 
-        {/* Pending — progress bar + cancel */}
-        {job.status === 'pending' && (
-          <div>
-            <div style={{ height:'4px', background:'var(--line)', borderRadius:'4px', overflow:'hidden', marginBottom:'16px' }}>
-              <div style={{ height:'100%', width:'40%', background:'linear-gradient(90deg,#ff8a4c,#e8481f)', borderRadius:'4px', animation:'sweep 1.6s infinite ease-in-out' }} />
-            </div>
-            <style>{`@keyframes sweep{0%{transform:translateX(-150%)}100%{transform:translateX(350%)}}`}</style>
-            <button onClick={() => { if(window.confirm('Cancel this request?')) updateJobStatus(job.id,'cancelled'); }} style={{
-              width:'100%', padding:'14px', fontSize:'14px', fontWeight:'600', color:'#e8481f',
-              background:'rgba(255,106,61,.06)', border:'1.5px solid rgba(255,106,61,.2)',
-              borderRadius:'14px', cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif",
-            }}>Cancel request</button>
-          </div>
-        )}
+        {/* Timeline */}
+        <div style={{ paddingLeft: '8px' }}>
+          <TimelineItem 
+            active={currentIdx >= 0}
+            completed={currentIdx > 0}
+            num="1" 
+            title="Request accepted" 
+            sub={`${mechanicName} confirmed your job`} 
+          />
+          <TimelineItem 
+            active={currentIdx >= 0}
+            completed={currentIdx > 1}
+            num="2" 
+            title="En route to you" 
+            sub="Tracking live location..." 
+          />
+          <TimelineItem 
+            active={currentIdx >= 1}
+            completed={currentIdx > 2}
+            num="3" 
+            title="Arrived & diagnosing" 
+            sub={currentIdx >= 1 ? "Mechanic is looking at the vehicle" : "Pending"} 
+          />
+          <TimelineItem 
+            active={currentIdx >= 2}
+            completed={currentIdx > 3}
+            num="4" 
+            title="Repair completed" 
+            sub={currentIdx >= 2 ? "Finalizing fixes..." : "Pending"}
+            last
+          />
+        </div>
 
-        {/* Mechanic card (accepted+) */}
-        {job.status !== 'pending' && job.mechanicId && (
-          <div style={{
-            background:'var(--bg)', border:'1.5px solid var(--line)',
-            borderRadius:'16px', padding:'14px 16px',
-            display:'flex', gap:'12px', alignItems:'center', marginBottom:'16px',
+        <div style={{ flex: 1 }} />
+        
+        {/* Test Controls as "Skip ahead (demo)" */}
+        <div style={{ marginTop: '30px' }}>
+          <button className="btn" style={{ background: 'none', border: '1.5px solid var(--line)', color: 'var(--ink)', boxShadow: 'none' }} onClick={() => {
+            const next = statuses[currentIdx + 1];
+            if (next === 'completed') {
+              updateDoc(doc(db,'jobs',job.id), {
+                status:'completed',
+                cost:{ items:[{ name:'Service charge', price:'8000' },{ name:'Replacement battery', price:'32000' },{ name:'Platform fee', price:'2000' }], total:42000 }
+              });
+            } else if (next) {
+              updateJobStatus(job.id, next);
+            }
           }}>
-            <div style={{
-              width:'44px', height:'44px', borderRadius:'13px',
-              background:'linear-gradient(150deg,#ff8a4c,#e8481f)',
-              display:'grid', placeItems:'center',
-              fontSize:'16px', fontWeight:'800', color:'#fff', flexShrink:0,
-            }}>M</div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontWeight:'700', fontSize:'15px', color:'var(--ink)' }}>Your Mechanic</div>
-              <div style={{ fontSize:'12px', color:'var(--slate)', marginTop:'2px' }}>{job.service?.nm} Specialist · En route</div>
-            </div>
-            <a href="tel:" style={{
-              width:'40px', height:'40px', borderRadius:'50%',
-              background:'rgba(22,163,74,.1)', border:'1.5px solid rgba(22,163,74,.2)',
-              display:'grid', placeItems:'center', fontSize:'18px', textDecoration:'none', color:'#16a34a',
-            }}>☎</a>
-          </div>
-        )}
-
-        {/* Quote approval */}
-        {job.status === 'completed' && job.cost?.items?.length > 0 && (
-          <QuoteApproval job={job} />
-        )}
-
-        {/* TEST MODE */}
-        {job.status !== 'pending' && (
-          <div style={{ marginTop:'20px', padding:'14px', border:'1.5px dashed var(--line)', borderRadius:'14px' }}>
-            <div className="label" style={{ marginBottom:'10px' }}>Test Mode — Simulate Mechanic</div>
-            {job.status === 'accepted' && (
-              <button onClick={() => updateJobStatus(job.id,'diagnosing')} style={testBtn}>Simulate: Arrived & diagnosing</button>
-            )}
-            {job.status === 'diagnosing' && (
-              <button onClick={() => updateJobStatus(job.id,'repairing')} style={testBtn}>Simulate: Start repair</button>
-            )}
-            {job.status === 'repairing' && (
-              <button onClick={async () => {
-                await updateDoc(doc(db,'jobs',job.id), {
-                  status:'completed',
-                  cost:{ items:[{ name:'Service charge', price:'8000' },{ name:'Parts replacement', price:'32000' }], total:40000, notes:'Test mode' }
-                });
-              }} style={testBtn}>Simulate: Submit quote (₦40,000)</button>
-            )}
-            {job.status === 'completed' && <div style={{ fontSize:'13px', color:'var(--slate)' }}>Approve the quote above to pay.</div>}
-            {job.status === 'approved' && (
-              <button onClick={() => updateJobStatus(job.id,'finished')} style={testBtn}>Finish & return home</button>
-            )}
-          </div>
-        )}
+            Skip ahead (demo) <span style={{ fontSize: '16px' }}>⏩</span>
+          </button>
+        </div>
       </div>
-    </div>
-  );
-}
-
-const testBtn = {
-  width:'100%', padding:'12px',
-  background:'var(--bg)', color:'var(--ink)',
-  border:'1.5px solid var(--line)', borderRadius:'12px',
-  fontSize:'13px', fontWeight:'600',
-  cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif",
-};
-
-function QuoteApproval({ job }) {
-  const total = job.cost?.total || 0;
-  const [approving, setApproving] = useState(false);
-
-  async function approve() {
-    setApproving(true);
-    await updateJobStatus(job.id, 'approved');
-    setApproving(false);
+    );
   }
 
-  return (
-    <div style={{ marginBottom:'16px' }}>
-      <div className="label" style={{ marginBottom:'12px' }}>Cost Breakdown</div>
-      <div style={{ background:'var(--bg)', border:'1.5px solid var(--line)', borderRadius:'16px', padding:'14px', marginBottom:'14px' }}>
-        {job.cost.items.map((item, i) => (
-          <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'10px 0', borderBottom: i < job.cost.items.length-1 ? '1px solid var(--line)' : 'none', fontSize:'14.5px' }}>
-            <span style={{ color:'var(--slate)' }}>{item.name}</span>
-            <span style={{ fontWeight:'600', color:'var(--ink)' }}>₦{Number(item.price).toLocaleString()}</span>
+  // --- CHAT VIEW ---
+  if (view === 'chat') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 'calc(100vh - 40px)', background: 'var(--bg)', fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+        
+        <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'24px', paddingBottom: '16px', borderBottom: '1px solid var(--line)' }}>
+          <button onClick={() => setView('timeline')} style={{
+            width:'40px', height:'40px', borderRadius:'13px',
+            border:'1.5px solid var(--line)', background:'var(--surface)',
+            display:'grid', placeItems:'center', cursor:'pointer', fontSize:'16px',
+            flexShrink: 0,
+          }}>←</button>
+          
+          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#4338ca', color: '#fff', display: 'grid', placeItems: 'center', fontSize: '18px', fontWeight: '800' }}>
+            {mechanicInitial}
           </div>
-        ))}
-        <div style={{ display:'flex', justifyContent:'space-between', paddingTop:'12px', fontWeight:'800', fontSize:'19px' }}>
-          <span>Total</span>
-          <span>₦{total.toLocaleString()}</span>
+          
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight:'800', fontSize:'17px', letterSpacing:'-.3px' }}>{mechanicName}</div>
+            <div style={{ fontSize:'12px', color:'#16a34a', fontWeight: '600' }}>● On the way to you</div>
+          </div>
+          
+          <div style={{ width: '40px', height: '40px', borderRadius: '13px', border: '1.5px solid var(--line)', display: 'grid', placeItems: 'center', fontSize: '16px' }}>
+            📞
+          </div>
         </div>
+
+        {/* Chat Messages */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ background: '#fff', padding: '16px', borderRadius: '16px 16px 16px 4px', boxShadow: '0 4px 14px rgba(0,0,0,0.03)', maxWidth: '85%' }}>
+            <div style={{ fontSize: '14.5px', color: 'var(--ink)', lineHeight: 1.4 }}>Hello👋 I've accepted your request and I'm heading to you now.</div>
+            <div style={{ fontSize: '10px', color: 'var(--slate)', marginTop: '6px' }}>9:41</div>
+          </div>
+          <div style={{ background: '#fff', padding: '16px', borderRadius: '16px 16px 16px 4px', boxShadow: '0 4px 14px rgba(0,0,0,0.03)', maxWidth: '85%' }}>
+            <div style={{ fontSize: '14.5px', color: 'var(--ink)', lineHeight: 1.4 }}>Does the car make any sound when you turn the key, or nothing at all?</div>
+            <div style={{ fontSize: '10px', color: 'var(--slate)', marginTop: '6px' }}>9:41</div>
+          </div>
+        </div>
+
+        {/* Chat Input */}
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '20px', marginBottom: '16px' }}>
+          <input type="text" placeholder="Type a message..." style={{
+            flex: 1, background: '#fff', border: '1.5px solid var(--line)', borderRadius: '24px', padding: '14px 20px', fontSize: '14px', outline: 'none', fontFamily: "'Plus Jakarta Sans',sans-serif"
+          }} />
+          <button style={{
+            width: '46px', height: '46px', borderRadius: '50%', background: 'linear-gradient(150deg,#ff8a4c,#e8481f)', color: '#fff', border: 'none', fontSize: '18px', boxShadow: '0 4px 12px rgba(232,72,31,.3)'
+          }}>↑</button>
+        </div>
+
+        <button className="btn" style={{ background: 'var(--ink)', color: '#fff' }} onClick={() => setView('timeline')}>
+          Track arrival <span>→</span>
+        </button>
+
       </div>
-      <button onClick={approve} disabled={approving} className="btn btn-primary" style={{ opacity: approving ? .6 : 1 }}>
-        {approving ? 'Processing…' : `Approve & Pay ₦${total.toLocaleString()}`} {!approving && <span>→</span>}
-      </button>
+    );
+  }
+
+  // --- PAYMENT VIEW ---
+  if (view === 'payment') {
+    const total = job.cost?.total || 0;
+    const [approving, setApproving] = useState(false);
+
+    async function approve() {
+      setApproving(true);
+      await updateJobStatus(job.id, 'approved');
+      setApproving(false);
+    }
+
+    if (job.status === 'approved') {
+      return (
+        <div style={{ textAlign:'center', paddingTop: '80px', height: '100%', minHeight: 'calc(100vh - 40px)', background: 'var(--bg)', fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+          <div style={{ width:'80px', height:'80px', borderRadius:'50%', background:'linear-gradient(150deg,#22c55e,#16a34a)', display:'grid', placeItems:'center', margin:'0 auto 24px', fontSize:'32px', color:'#fff', boxShadow:'0 14px 32px -10px #16a34a' }}>✓</div>
+          <div style={{ fontWeight:'800', fontSize:'24px', color:'#16a34a', marginBottom:'8px' }}>Payment successful</div>
+          <div style={{ fontSize:'15px', color:'var(--slate)' }}>₦{total.toLocaleString()} paid to {mechanicName}.</div>
+          <button className="btn" style={{ marginTop: '40px' }} onClick={() => window.location.reload()}>Done</button>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 'calc(100vh - 40px)', background: 'var(--bg)', fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+        
+        {/* Invoice */}
+        <div style={{ background: '#fff', border: '1.5px solid var(--line)', borderRadius: '24px', padding: '20px', marginBottom: '24px', boxShadow: 'var(--shadow-sm)' }}>
+          {job.cost?.items?.map((item, i) => (
+            <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom: '1px solid var(--line)', fontSize:'14.5px' }}>
+              <span style={{ color:'var(--slate)' }}>{item.name}</span>
+              <span style={{ fontWeight:'700', color:'var(--ink)' }}>₦{Number(item.price).toLocaleString()}</span>
+            </div>
+          ))}
+          <div style={{ display:'flex', justifyContent:'space-between', paddingTop:'16px', fontWeight:'800', fontSize:'20px', color: 'var(--ink)' }}>
+            <span>Total</span>
+            <span>₦{total.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div className="label" style={{ marginBottom: '12px' }}>PAY WITH</div>
+        
+        {/* Payment Methods */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+          {[
+            { id: 'Card', label: 'Debit / Credit Card', icon: '💳' },
+            { id: 'Bank Transfer', label: 'Bank Transfer', icon: '🏦' },
+            { id: 'Digital Wallet', label: 'Digital Wallet', icon: '📱' },
+            { id: 'Cash', label: 'Cash', icon: '💵' },
+          ].map(m => {
+            const isSelected = paymentMethod === m.id;
+            return (
+              <div key={m.id} onClick={() => setPaymentMethod(m.id)} style={{
+                background: '#fff', border: `1.5px solid ${isSelected ? '#e8481f' : 'var(--line)'}`, borderRadius: '16px', padding: '16px',
+                display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', transition: '.2s',
+                boxShadow: isSelected ? '0 4px 14px rgba(232,72,31,.1)' : 'none'
+              }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--bg)', display: 'grid', placeItems: 'center', fontSize: '18px' }}>
+                  {m.icon}
+                </div>
+                <div style={{ flex: 1, fontWeight: '700', fontSize: '15px', color: 'var(--ink)' }}>
+                  {m.label}
+                </div>
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: `1.5px solid ${isSelected ? '#e8481f' : 'var(--line-2)'}`, background: isSelected ? '#e8481f' : 'none', display: 'grid', placeItems: 'center', transition: '.2s' }}>
+                  {isSelected && <span style={{ color: '#fff', fontSize: '12px' }}>✓</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ flex: 1 }} />
+        
+        <button onClick={approve} disabled={approving} className="btn" style={{ opacity: approving ? .6 : 1 }}>
+          {approving ? 'Processing…' : `Pay ₦${total.toLocaleString()}`} {!approving && <span>→</span>}
+        </button>
+
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// Helper for Timeline
+function TimelineItem({ active, completed, num, title, sub, last }) {
+  const color = completed ? '#16a34a' : (active ? '#ff6a3d' : '#e3e8ee');
+  const textColor = active ? 'var(--ink)' : 'var(--slate-2)';
+  
+  return (
+    <div style={{ display: 'flex', gap: '16px', position: 'relative', paddingBottom: last ? '0' : '28px' }}>
+      {!last && (
+        <div style={{ position: 'absolute', left: '15px', top: '32px', bottom: '0', width: '2px', background: 'var(--line)' }} />
+      )}
+      <div style={{
+        width: '32px', height: '32px', borderRadius: '50%', background: color, 
+        display: 'grid', placeItems: 'center', color: completed ? '#fff' : (active ? '#fff' : 'var(--slate)'),
+        fontWeight: '800', fontSize: '13px', zIndex: 1
+      }}>
+        {completed ? '✓' : num}
+      </div>
+      <div style={{ paddingTop: '4px' }}>
+        <div style={{ fontWeight: '800', fontSize: '16px', color: textColor, letterSpacing: '-.2px' }}>{title}</div>
+        <div style={{ fontSize: '13.5px', color: 'var(--slate)', marginTop: '2px' }}>{sub}</div>
+      </div>
     </div>
   );
 }

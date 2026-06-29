@@ -41,6 +41,7 @@ export default function CustomerDashboard() {
   const [loading, setLoading]                 = useState(false);
   const [activeJob, setActiveJob]             = useState(undefined);
   const [step, setStep]                       = useState('select'); // 'select', 'location', 'mechanics'
+  const [selectedMechanicId, setSelectedMechanicId] = useState(null);
 
   useEffect(() => {
     const unsub = listenToActiveJobForCustomer(currentUser.uid, job => {
@@ -166,8 +167,8 @@ export default function CustomerDashboard() {
 
   if (step === 'mechanics' && selectedService) {
     return (
-      <div>
-        <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'24px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 'calc(100vh - 120px)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px' }}>
           <button onClick={() => setStep('location')} style={{
             width:'40px', height:'40px', borderRadius:'13px',
             border:'1.5px solid var(--line)', background:'var(--surface)',
@@ -175,9 +176,38 @@ export default function CustomerDashboard() {
             transition:'.2s', flexShrink: 0,
           }}>←</button>
           <div>
-            <div style={{ fontWeight:'800', fontSize:'18px', letterSpacing:'-.3px' }}>{selectedService.nm}</div>
+            <div style={{ fontWeight:'800', fontSize:'18px', letterSpacing:'-.3px' }}>
+              {loadingMechs ? 'Searching…' : mechanics.length > 0 ? `${mechanics.length} mechanics nearby` : 'No mechanics'}
+            </div>
             <div style={{ fontSize:'12px', color:'var(--slate)', marginTop:'1px' }}>Ranked by rating & distance</div>
           </div>
+        </div>
+
+        <div style={{
+          height: '160px', background: '#e9edf2', borderRadius: '22px', position: 'relative', overflow: 'hidden',
+          marginBottom: '20px', flexShrink: 0
+        }}>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'repeating-linear-gradient(0deg,#dde3ea 0 1px,transparent 1px 40px), repeating-linear-gradient(90deg,#dde3ea 0 1px,transparent 1px 40px)'
+          }} />
+          <div style={{ position: 'absolute', top: '84px', left: 0, right: 0, height: '18px', background: '#fff', boxShadow: '0 0 0 1px #e3e8ee' }} />
+          <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: '18px', marginLeft: '-9px', background: '#fff', boxShadow: '0 0 0 1px #e3e8ee' }} />
+          
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg,var(--bg) 1%,transparent 28%)' }} />
+          
+          <div style={{ position: 'absolute', left: '50%', top: '55%', transform: 'translate(-50%,-100%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{
+              width: '34px', height: '34px', borderRadius: '50% 50% 50% 2px', rotate: '45deg',
+              background: 'var(--ink)', display: 'grid', placeItems: 'center', boxShadow: 'var(--shadow)'
+            }}>
+              <span style={{ rotate: '-45deg', fontSize: '15px' }}>📍</span>
+            </div>
+          </div>
+
+          <div style={{ position: 'absolute', left: '20%', top: '25%', transform: 'translate(-50%,-50%) rotate(45deg)', width: '30px', height: '30px', borderRadius: '50% 50% 50% 2px', background: 'rgba(255,106,61,.9)', display: 'grid', placeItems: 'center', boxShadow: 'var(--shadow)' }}><span style={{ rotate: '-45deg', fontSize: '12px' }}>🔧</span></div>
+          <div style={{ position: 'absolute', right: '15%', top: '35%', transform: 'translate(-50%,-50%) rotate(45deg)', width: '30px', height: '30px', borderRadius: '50% 50% 50% 2px', background: 'rgba(255,106,61,.9)', display: 'grid', placeItems: 'center', boxShadow: 'var(--shadow)' }}><span style={{ rotate: '-45deg', fontSize: '12px' }}>🔧</span></div>
+          <div style={{ position: 'absolute', left: '40%', bottom: '15%', transform: 'translate(-50%,-50%) rotate(45deg)', width: '30px', height: '30px', borderRadius: '50% 50% 50% 2px', background: 'rgba(255,106,61,.9)', display: 'grid', placeItems: 'center', boxShadow: 'var(--shadow)' }}><span style={{ rotate: '-45deg', fontSize: '12px' }}>🔧</span></div>
         </div>
 
         {loadingMechs ? (
@@ -189,37 +219,66 @@ export default function CustomerDashboard() {
             <div className="sub">Please try again later.</div>
           </div>
         ) : (
-          <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'12px', flex:1 }}>
             {mechanics.map((m, idx) => {
               const basePrice = m.servicePrices?.serviceCharge || 5000;
               const color = MECH_COLORS[idx % MECH_COLORS.length];
+              const isSelected = selectedMechanicId === m.uid;
               return (
-                <div key={m.uid} className="card" style={{ display:'flex', gap:'14px', alignItems:'center' }}>
-                  <div className="ava" style={{ background: color }}>
+                <div key={m.uid} onClick={() => setSelectedMechanicId(m.uid)} style={{
+                  background: 'var(--surface)',
+                  border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--line)'}`,
+                  borderRadius: '20px', padding: '16px',
+                  display: 'flex', gap: '14px', alignItems: 'flex-start',
+                  cursor: 'pointer', transition: 'box-shadow .2s, border-color .2s',
+                  boxShadow: isSelected ? '0 0 0 4px rgba(255,106,61,.1)' : 'var(--shadow-sm)',
+                }}>
+                  <div style={{
+                    width: '56px', height: '56px', borderRadius: '16px',
+                    background: color, display: 'grid', placeItems: 'center',
+                    fontSize: '24px', fontWeight: '800', color: '#fff', position: 'relative'
+                  }}>
                     {m.name?.[0] || 'M'}
-                    <div className="vbadge">✓</div>
+                    <div style={{
+                      position: 'absolute', bottom: '-4px', right: '-4px',
+                      width: '20px', height: '20px', borderRadius: '50%',
+                      background: '#16a34a', border: '2px solid var(--surface)',
+                      display: 'grid', placeItems: 'center', color: '#fff', fontSize: '12px'
+                    }}>✓</div>
                   </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:'700', fontSize:'15.5px', letterSpacing:'-.2px' }}>{m.name}</div>
-                    <div style={{ fontSize:'12px', color:'var(--slate)', marginTop:'2px' }}>{m.speciality || selectedService.nm + ' Specialist'}</div>
-                    <div style={{ display:'flex', gap:'6px', marginTop:'7px', flexWrap:'wrap' }}>
-                      <span className="chip star">★ {m.rating || '5.0'}</span>
-                      <span className="chip">₦{Number(basePrice).toLocaleString()} est.</span>
+                  
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontWeight:'800', fontSize:'17px', letterSpacing:'-.3px', color: 'var(--ink)' }}>{m.name}</div>
+                        <div style={{ fontSize:'13px', color:'var(--slate)', marginTop:'2px' }}>{m.speciality || selectedService.nm + ' Specialist'}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight:'800', fontSize:'18px', color: 'var(--ink)', letterSpacing: '-.5px' }}>₦{Math.round(basePrice/1000)}k</div>
+                        <div style={{ fontSize:'11px', color:'var(--slate-2)', fontFamily: "'JetBrains Mono', monospace" }}>est.</div>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display:'flex', gap:'8px', marginTop:'10px', flexWrap:'wrap' }}>
+                      <span style={{ background: '#fcf6df', color: '#d97706', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" }}>★ {m.rating || '4.9'}</span>
+                      <span style={{ background: '#f1f3f6', color: 'var(--slate)', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" }}>📍 {2 + (idx%3)}.{idx} km</span>
+                      <span style={{ background: '#f1f3f6', color: 'var(--slate)', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" }}>⏱ {8 + (idx*2)} min</span>
                     </div>
                   </div>
-                  <button
-                    className="btn btn-primary"
-                    style={{ width:'auto', padding:'12px 18px', fontSize:'14px', borderRadius:'14px' }}
-                    onClick={() => handleRequest(m.uid)}
-                    disabled={loading}
-                  >
-                    {loading ? '…' : 'Request'}
-                  </button>
                 </div>
               );
             })}
           </div>
         )}
+
+        <div style={{ marginTop: '24px' }}>
+          <button className="btn" disabled={!selectedMechanicId || loading} onClick={() => handleRequest(selectedMechanicId)} style={{
+            opacity: selectedMechanicId ? 1 : 0.4,
+            pointerEvents: selectedMechanicId ? 'auto' : 'none',
+          }}>
+            {loading ? 'Requesting…' : 'Request mechanic'} {!loading && <span>→</span>}
+          </button>
+        </div>
       </div>
     );
   }
