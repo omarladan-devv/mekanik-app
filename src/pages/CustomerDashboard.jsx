@@ -57,6 +57,7 @@ export default function CustomerDashboard() {
   useEffect(() => {
     const unsub = listenToActiveJobForCustomer(currentUser.uid, job => {
       setActiveJob(job || null);
+      if (!job) setLoading(false);
     });
     return () => unsub();
   }, [currentUser.uid]);

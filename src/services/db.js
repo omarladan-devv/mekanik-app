@@ -64,8 +64,8 @@ export function listenToPendingJobs(mechanicId, callback) {
   });
 }
 
-export async function acceptJob(jobId, mechanicId) {
-  await updateDoc(doc(db, 'jobs', jobId), { mechanicId, status: 'accepted' });
+export async function acceptJob(jobId, mechanicId, mechanicName) {
+  await updateDoc(doc(db, 'jobs', jobId), { mechanicId, mechanicName: mechanicName || 'Mechanic', status: 'accepted' });
 }
 
 export async function updateJobStatus(jobId, newStatus) {

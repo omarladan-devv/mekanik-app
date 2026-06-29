@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { listenToPendingJobs, listenToActiveJobForMechanic, acceptJob, updateMechanicStatus } from '../services/db';
+import { listenToPendingJobs, listenToActiveJobForMechanic, acceptJob, updateMechanicStatus, updateJobStatus } from '../services/db';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import MechanicActiveJob from './MechanicActiveJob';
@@ -42,7 +42,7 @@ export default function MechanicDashboard() {
 
   async function handleAccept(jobId) {
     setAccepting(jobId);
-    try { await acceptJob(jobId, currentUser.uid); }
+    try { await acceptJob(jobId, currentUser.uid, userData?.name || 'Mechanic'); }
     catch { alert('Failed to accept job.'); setAccepting(null); }
   }
 
@@ -184,7 +184,7 @@ export default function MechanicDashboard() {
               </div>
               <div style={{ display:'flex', gap:'10px' }}>
                 <button className="btn btn-ghost" style={{ margin:0, padding:'13px', fontSize:'14px', borderRadius:'14px' }}
-                  onClick={() => {}}>Decline</button>
+                  onClick={() => updateJobStatus(job.id, 'declined')}>Decline</button>
                 <button
                   className="btn btn-primary"
                   style={{ margin:0, padding:'13px', fontSize:'14px', borderRadius:'14px', opacity: accepting === job.id ? .6 : 1 }}
