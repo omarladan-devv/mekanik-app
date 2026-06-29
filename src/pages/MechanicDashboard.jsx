@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { listenToPendingJobs, listenToActiveJobForMechanic, acceptJob, updateMechanicStatus } from '../services/db';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import MechanicActiveJob from './MechanicActiveJob';
 import MyListings from './MyListings';
 
@@ -23,6 +25,20 @@ export default function MechanicDashboard() {
     const unsub = listenToPendingJobs(currentUser.uid, setPendingJobs);
     return () => unsub();
   }, [currentUser.uid]);
+
+  // Track and update live location
+  useEffect(() => {
+    if (!navigator.geolocation || avail !== 'online') return;
+    const watchId = navigator.geolocation.watchPosition(
+      pos => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        updateDoc(doc(db, 'users', currentUser.uid), { location: loc }).catch(console.error);
+      },
+      err => console.error("Location error", err),
+      { enableHighAccuracy: true, distanceFilter: 10 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [avail, currentUser.uid]);
 
   async function handleAccept(jobId) {
     setAccepting(jobId);

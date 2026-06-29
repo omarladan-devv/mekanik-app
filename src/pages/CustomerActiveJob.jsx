@@ -24,6 +24,24 @@ export default function CustomerActiveJob({ jobId }) {
   const mechanicName = job.mechanicName || 'Musa';
   const mechanicInitial = mechanicName[0] || 'M';
 
+  // --- PENDING VIEW ---
+  if (job.status === 'pending') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 'calc(100vh - 40px)', background: 'var(--bg)', fontFamily: "'Plus Jakarta Sans',sans-serif", padding: '24px', textAlign: 'center' }}>
+        <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: '3.5px solid #e8eaf0', borderTopColor: '#ff6a3d', animation: 'spin .7s linear infinite', marginBottom: '24px' }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ fontWeight: '800', fontSize: '22px', color: 'var(--ink)' }}>Waiting for mechanic...</div>
+        <div style={{ fontSize: '15px', color: 'var(--slate)', marginTop: '8px', marginBottom: '40px', lineHeight: 1.5 }}>Your request has been sent to {job.targetMechanicId ? 'the selected mechanic' : 'mechanics nearby'}. Please wait while they review it.</div>
+        
+        <button onClick={() => { if(window.confirm('Cancel this request?')) updateJobStatus(job.id, 'cancelled'); }} style={{
+          width: '100%', padding: '16px', fontSize: '15px', fontWeight: '700', color: '#e8481f',
+          background: 'rgba(255,106,61,.08)', border: '1.5px solid rgba(255,106,61,.2)',
+          borderRadius: '16px', cursor: 'pointer', fontFamily: "'Plus Jakarta Sans',sans-serif",
+        }}>Cancel Request</button>
+      </div>
+    );
+  }
+
   // --- TIMELINE VIEW ---
   if (view === 'timeline') {
     const statuses = ['accepted', 'diagnosing', 'repairing', 'completed'];
@@ -83,23 +101,6 @@ export default function CustomerActiveJob({ jobId }) {
         </div>
 
         <div style={{ flex: 1 }} />
-        
-        {/* Test Controls as "Skip ahead (demo)" */}
-        <div style={{ marginTop: '30px' }}>
-          <button className="btn" style={{ background: 'none', border: '1.5px solid var(--line)', color: 'var(--ink)', boxShadow: 'none' }} onClick={() => {
-            const next = statuses[currentIdx + 1];
-            if (next === 'completed') {
-              updateDoc(doc(db,'jobs',job.id), {
-                status:'completed',
-                cost:{ items:[{ name:'Service charge', price:'8000' },{ name:'Replacement battery', price:'32000' },{ name:'Platform fee', price:'2000' }], total:42000 }
-              });
-            } else if (next) {
-              updateJobStatus(job.id, next);
-            }
-          }}>
-            Skip ahead (demo) <span style={{ fontSize: '16px' }}>⏩</span>
-          </button>
-        </div>
       </div>
     );
   }

@@ -25,6 +25,17 @@ function getLocation() {
   });
 }
 
+function calcDist(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+}
+
 const MECH_COLORS = [
   'linear-gradient(150deg,#ff8a4c,#e8481f)',
   'linear-gradient(150deg,#0fb5a4,#0a8276)',
@@ -63,7 +74,17 @@ export default function CustomerDashboard() {
     setStep('mechanics');
     setLoadingMechs(true);
     try {
-      const available = await getAvailableMechanics();
+      const loc = await getLocation();
+      let available = await getAvailableMechanics();
+      
+      // Calculate distances if customer location exists
+      if (loc) {
+        available = available.map(m => {
+          const dist = m.location ? calcDist(loc.lat, loc.lng, m.location.lat, m.location.lng) : Infinity;
+          return { ...m, dist };
+        }).sort((a, b) => a.dist - b.dist);
+      }
+      
       setMechanics(available);
     } catch (err) {
       console.error(err); alert('Failed to load mechanics.');
@@ -76,11 +97,6 @@ export default function CustomerDashboard() {
       const loc   = await getLocation();
       const jobId = await createJobRequest(currentUser.uid, selectedService, mechanicId);
       if (loc) await updateDoc(doc(db, 'jobs', jobId), { customerLocation: loc });
-
-      // AUTO-MATCH FOR TESTING
-      setTimeout(() => {
-        acceptJob(jobId, mechanicId).catch(console.error);
-      }, 2000);
     } catch (err) {
       console.error(err); alert('Failed to request mechanic. Please try again.');
       setLoading(false);
@@ -261,8 +277,12 @@ export default function CustomerDashboard() {
                     
                     <div style={{ display:'flex', gap:'8px', marginTop:'10px', flexWrap:'wrap' }}>
                       <span style={{ background: '#fcf6df', color: '#d97706', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" }}>★ {m.rating || '4.9'}</span>
-                      <span style={{ background: '#f1f3f6', color: 'var(--slate)', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" }}>📍 {2 + (idx%3)}.{idx} km</span>
-                      <span style={{ background: '#f1f3f6', color: 'var(--slate)', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" }}>⏱ {8 + (idx*2)} min</span>
+                      {m.dist !== Infinity && (
+                        <>
+                          <span style={{ background: '#f1f3f6', color: 'var(--slate)', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" }}>📍 {m.dist.toFixed(1)} km</span>
+                          <span style={{ background: '#f1f3f6', color: 'var(--slate)', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', fontFamily: "'JetBrains Mono', monospace" }}>⏱ {Math.max(1, Math.round(m.dist * 3))} min</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
