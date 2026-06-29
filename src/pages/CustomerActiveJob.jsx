@@ -8,6 +8,7 @@ export default function CustomerActiveJob({ jobId }) {
   const [job, setJob]               = useState(null);
   const [view, setView]             = useState('timeline'); // 'timeline', 'chat', 'payment'
   const [paymentMethod, setPaymentMethod] = useState('Bank Transfer');
+  const [approving, setApproving]   = useState(false);
 
   useEffect(() => {
     const unsub = listenToActiveJob(jobId, (updatedJob) => {
@@ -165,7 +166,6 @@ export default function CustomerActiveJob({ jobId }) {
   // --- PAYMENT VIEW ---
   if (view === 'payment') {
     const total = job.cost?.total || 0;
-    const [approving, setApproving] = useState(false);
 
     async function approve() {
       setApproving(true);
