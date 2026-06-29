@@ -159,7 +159,10 @@ export default function MechanicActiveJob({ jobId }) {
           <div style={{ textAlign:'center', padding:'20px 0' }}>
             <div style={{ width:'64px', height:'64px', borderRadius:'50%', background:'linear-gradient(150deg,#22c55e,#16a34a)', display:'grid', placeItems:'center', margin:'0 auto 14px', fontSize:'26px', color:'#fff', boxShadow:'0 14px 32px -10px #16a34a' }}>✓</div>
             <div style={{ fontWeight:'800', fontSize:'18px', color:'#16a34a', marginBottom:'6px' }}>Payment received!</div>
-            <div style={{ fontSize:'14px', color:'var(--slate)' }}>₦{job.cost?.total?.toLocaleString()} approved and paid.</div>
+            <div style={{ fontSize:'14px', color:'var(--slate)', marginBottom:'24px' }}>₦{job.cost?.total?.toLocaleString()} approved and paid.</div>
+            <button className="btn btn-primary" onClick={() => advanceStatus('finished')}>
+              Finish & return home <span>→</span>
+            </button>
           </div>
         )}
       </div>

@@ -179,7 +179,7 @@ export default function CustomerActiveJob({ jobId }) {
           <div style={{ width:'80px', height:'80px', borderRadius:'50%', background:'linear-gradient(150deg,#22c55e,#16a34a)', display:'grid', placeItems:'center', margin:'0 auto 24px', fontSize:'32px', color:'#fff', boxShadow:'0 14px 32px -10px #16a34a' }}>✓</div>
           <div style={{ fontWeight:'800', fontSize:'24px', color:'#16a34a', marginBottom:'8px' }}>Payment successful</div>
           <div style={{ fontSize:'15px', color:'var(--slate)' }}>₦{total.toLocaleString()} paid to {mechanicName}.</div>
-          <button className="btn" style={{ marginTop: '40px' }} onClick={() => window.location.reload()}>Done</button>
+          <button className="btn" style={{ marginTop: '40px' }} onClick={() => updateJobStatus(job.id, 'finished')}>Done</button>
         </div>
       );
     }
