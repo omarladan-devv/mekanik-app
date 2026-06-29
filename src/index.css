@@ -1,24 +1,38 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 /* ============================================================
    DESIGN TOKENS
 ============================================================ */
 :root {
-  --accent:       #276EF1;
-  --accent-hover: #1B56C4;
-  --green:        #05944F;
-  --red:          #E11900;
-  --bg:           #000000;
-  --bg2:          #1C1C1E;
-  --surface:      #1C1C1E;
-  --surface2:     #2C2C2E;
-  --border:       #2C2C2E;
-  --text:         #FFFFFF;
-  --text2:        #8E8E93;
-  --text3:        #48484A;
-  --r:            8px;
-  --r-lg:         12px;
-  --r-xl:         16px;
+  --ink:         #0e1320;
+  --ink-2:       #171d2e;
+  --surface:     #ffffff;
+  --bg:          #f5f6f9;
+  --accent:      #ff6a3d;
+  --accent-2:    #ff8a4c;
+  --accent-deep: #e8481f;
+  --teal:        #0fb5a4;
+  --slate:       #6b7384;
+  --slate-2:     #9aa1b1;
+  --line:        #e8eaf0;
+  --line-2:      #eef0f5;
+  --ok:          #16a34a;
+  --red:         #E11900;
+  --shadow-sm:   0 2px 8px -2px rgba(14,19,32,.12);
+  --shadow:      0 16px 40px -18px rgba(14,19,32,.28);
+  --shadow-lg:   0 30px 70px -28px rgba(14,19,32,.5);
+
+  /* compat aliases */
+  --accent-hover: #e8481f;
+  --text:        #0e1320;
+  --text2:       #6b7384;
+  --text3:       #9aa1b1;
+  --border:      #e8eaf0;
+  --surface2:    #f5f6f9;
+  --r:           12px;
+  --r-lg:        16px;
+  --r-xl:        20px;
+  --green:       #16a34a;
 }
 
 /* ============================================================
@@ -29,11 +43,12 @@
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
 }
+html { -webkit-text-size-adjust: 100%; }
 html, body, #root { height: 100%; }
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);
-  color: var(--text);
+  color: var(--ink);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -49,28 +64,39 @@ body {
    TYPOGRAPHY
 ============================================================ */
 .kicker {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1.5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--text2);
+  color: var(--accent-deep);
 }
 .h1 {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-  line-height: 1.2;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.6px;
+  line-height: 1.15;
 }
 .h2 {
   font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.2px;
-  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -.4px;
+  line-height: 1.2;
 }
 .sub {
   font-size: 14px;
-  color: var(--text2);
-  line-height: 1.5;
+  color: var(--slate);
+  line-height: 1.55;
+}
+.label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--slate-2);
+  font-weight: 700;
+  margin-bottom: 10px;
+  display: block;
 }
 
 /* ============================================================
@@ -80,72 +106,77 @@ input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="number"],
-input[type="tel"] {
-  background: var(--surface2);
-  border: none;
-  border-radius: var(--r);
-  padding: 14px 16px;
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  color: var(--text);
+input[type="tel"],
+textarea {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 15px;
+  padding: 14px 15px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
   outline: none;
   width: 100%;
-  transition: background .15s;
+  transition: border-color .2s, box-shadow .2s;
+  resize: none;
 }
-input:focus {
-  background: #3A3A3C;
+input:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(255,106,61,.08);
 }
-input::placeholder {
-  color: var(--text3);
+input::placeholder, textarea::placeholder {
+  color: var(--slate-2);
 }
 
 /* ============================================================
    BUTTONS
 ============================================================ */
 .btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
+  background: linear-gradient(150deg, var(--accent-2), var(--accent-deep));
+  color: #fff;
   border: none;
-  border-radius: var(--r);
-  padding: 14px 20px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  font-size: 15px;
+  border-radius: 18px;
+  padding: 17px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: 15.5px;
   cursor: pointer;
-  transition: background .15s;
+  transition: transform .18s, box-shadow .2s;
+  box-shadow: 0 14px 30px -12px var(--accent);
   text-align: center;
   text-decoration: none;
 }
-.btn:active {
-  transform: scale(.985);
-}
-.btn:disabled {
-  opacity: .4;
-  pointer-events: none;
-}
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .4; pointer-events: none; box-shadow: none; }
 
 .btn-primary {
-  background: var(--text);
-  color: var(--bg);
+  background: linear-gradient(150deg, var(--accent-2), var(--accent-deep));
+  color: #fff;
+  box-shadow: 0 14px 30px -12px var(--accent);
 }
-.btn-primary:hover {
-  background: #E5E5E5;
-}
+.btn-primary:hover { opacity: .9; }
 
 .btn-accent {
-  background: var(--accent);
-  color: #FFFFFF;
-}
-.btn-accent:hover {
-  background: var(--accent-hover);
+  background: linear-gradient(150deg, var(--accent-2), var(--accent-deep));
+  color: #fff;
 }
 
 .btn-ghost {
-  background: var(--surface2);
-  color: var(--text);
+  background: var(--surface);
+  color: var(--ink);
+  border: 1.5px solid var(--line);
+  box-shadow: none;
 }
-.btn-ghost:hover {
-  background: #3A3A3C;
+.btn-ghost:hover { background: var(--bg); }
+
+.btn-dark {
+  background: var(--ink);
+  box-shadow: 0 14px 30px -14px rgba(14,19,32,.6);
 }
 
 /* ============================================================
@@ -153,21 +184,15 @@ input::placeholder {
 ============================================================ */
 .card {
   background: var(--surface);
-  border-radius: var(--r-lg);
-  padding: 24px;
+  border: 1.5px solid var(--line);
+  border-radius: 20px;
+  padding: 16px;
+  transition: .2s;
 }
 
 /* ============================================================
-   LAYOUT
+   FORM GROUP
 ============================================================ */
-.app-container {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
-
 .form-group {
   margin-bottom: 14px;
 }
@@ -176,7 +201,7 @@ input::placeholder {
   font-size: 13px;
   font-weight: 500;
   margin-bottom: 6px;
-  color: var(--text2);
+  color: var(--slate);
 }
 
 .error-msg {
@@ -184,8 +209,9 @@ input::placeholder {
   font-size: 13px;
   margin-bottom: 16px;
   padding: 12px;
-  background: rgba(225, 25, 0, .1);
-  border-radius: var(--r);
+  background: rgba(225, 25, 0, .08);
+  border-radius: 12px;
+  border: 1px solid rgba(225, 25, 0, .15);
 }
 
 /* ============================================================
@@ -193,27 +219,30 @@ input::placeholder {
 ============================================================ */
 .role-toggle {
   display: flex;
-  background: var(--surface2);
-  border-radius: var(--r);
-  padding: 3px;
+  background: rgba(14,19,32,.06);
+  border: 1px solid var(--line);
+  padding: 5px;
+  border-radius: 15px;
   margin-bottom: 20px;
+  position: relative;
 }
 .role-toggle button {
   flex: 1;
-  padding: 10px;
+  padding: 10px 22px;
   background: none;
   border: none;
-  color: var(--text2);
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  border-radius: 6px;
+  color: var(--slate);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  border-radius: 11px;
   cursor: pointer;
   transition: all .15s;
 }
 .role-toggle button.active {
-  background: var(--text);
-  color: var(--bg);
+  background: linear-gradient(150deg, var(--accent-2), var(--accent-deep));
+  color: #fff;
+  box-shadow: 0 8px 20px -8px var(--accent);
 }
 
 /* ============================================================
@@ -226,39 +255,34 @@ input::placeholder {
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
 }
 .badge-green {
-  background: rgba(5, 148, 79, .12);
-  color: var(--green);
+  background: rgba(22, 163, 74, .12);
+  color: var(--ok);
 }
 .badge-accent {
-  background: rgba(39, 110, 241, .12);
-  color: var(--accent);
+  background: rgba(255, 106, 61, .12);
+  color: var(--accent-deep);
 }
 
 /* ============================================================
    SCROLLBAR RESET
 ============================================================ */
-::-webkit-scrollbar {
-  display: none;
-}
-* {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+::-webkit-scrollbar { display: none; }
+* { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* ============================================================
    BOTTOM NAVIGATION
 ============================================================ */
 .bottom-nav {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 56px;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
+  bottom: 0; left: 0; right: 0;
+  height: 60px;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 20px -8px rgba(14,19,32,.1);
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -271,9 +295,12 @@ input::placeholder {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  color: var(--text3);
+  color: var(--slate-2);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .5px;
+  text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
   flex: 1;
@@ -281,14 +308,12 @@ input::placeholder {
   transition: color .15s;
 }
 .bottom-nav-item.active {
-  color: var(--text);
+  color: var(--accent-deep);
 }
-.bottom-nav-icon {
-  font-size: 20px;
-}
+.bottom-nav-icon { font-size: 20px; }
 
 /* ============================================================
-   MENU LIST
+   MENU LIST (Account page)
 ============================================================ */
 .menu-list {
   display: flex;
@@ -299,36 +324,32 @@ input::placeholder {
   align-items: center;
   justify-content: space-between;
   padding: 16px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line);
   cursor: pointer;
   transition: opacity .15s;
 }
-.menu-item:last-child {
-  border-bottom: none;
-}
-.menu-item:active {
-  opacity: .6;
-}
+.menu-item:last-child { border-bottom: none; }
+.menu-item:active { opacity: .6; }
 .menu-item-left {
   display: flex;
   align-items: center;
   gap: 14px;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
 }
 .menu-item-icon {
-  width: 32px;
-  height: 32px;
+  width: 34px; height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface2);
-  border-radius: var(--r);
+  background: var(--bg);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
   font-size: 15px;
-  color: var(--text2);
+  color: var(--slate);
 }
 .menu-item-chevron {
-  color: var(--text3);
+  color: var(--slate-2);
   font-size: 16px;
 }
 
@@ -338,10 +359,10 @@ input::placeholder {
 .page {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 72px;
+  padding-bottom: 80px;
 }
 .page-padded {
-  padding: 24px 20px;
+  padding: 20px 20px 0;
 }
 
 /* ============================================================
@@ -349,7 +370,7 @@ input::placeholder {
 ============================================================ */
 .divider {
   height: 1px;
-  background: var(--border);
+  background: var(--line);
   margin: 8px 0;
 }
 
@@ -359,8 +380,79 @@ input::placeholder {
 a {
   color: var(--accent);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
 }
-a:hover {
-  text-decoration: underline;
+a:hover { text-decoration: underline; }
+
+/* ============================================================
+   MECHANIC AVATAR
+============================================================ */
+.ava {
+  width: 52px; height: 52px;
+  border-radius: 15px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  color: #fff;
+  font-size: 19px;
+  position: relative;
+}
+.ava .vbadge {
+  position: absolute;
+  bottom: -3px; right: -3px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--teal);
+  border: 2.5px solid var(--surface);
+  display: grid;
+  place-items: center;
+  font-size: 8px;
+  color: #fff;
+}
+
+/* ============================================================
+   CHIPS / TAGS
+============================================================ */
+.chip {
+  background: var(--bg);
+  padding: 3px 9px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--slate);
+  font-weight: 500;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.chip.star { background: rgba(255,170,0,.12); color: #b8860b; }
+
+/* ============================================================
+   STAT GRID (Mechanic Dashboard)
+============================================================ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+.stat {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+}
+.stat .v { font-size: 25px; font-weight: 800; letter-spacing: -.7px; }
+.stat .v .cur { font-size: 15px; color: var(--slate-2); font-weight: 700; }
+.stat .l { font-size: 10.5px; color: var(--slate-2); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
+.stat .trend { font-size: 10.5px; color: var(--ok); font-weight: 700; margin-top: 5px; }
+
+/* ============================================================
+   FOOTER CTA
+============================================================ */
+.footer-cta {
+  padding: 14px 20px calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(0deg, var(--bg) 70%, transparent);
+  flex-shrink: 0;
 }

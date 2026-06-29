@@ -1,18 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { listenToActiveJob, updateJobStatus } from '../services/db';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import MapView from '../components/MapView';
 
-export default function CustomerActiveJob({ jobId }) {
-  const [job, setJob]             = useState(null);
-  const [myLocation, setMyLocation] = useState(null);
-  const [locError, setLocError]   = useState(false);
+const STATUS_LABELS = {
+  pending:    { title: 'Finding a mechanic nearby',          sub: 'Searching for a professional near you.',                         color: '#ff6a3d' },
+  accepted:   { title: 'Mechanic is on the way',             sub: 'A verified professional is heading to your location.',           color: '#16a34a' },
+  diagnosing: { title: 'Mechanic has arrived',               sub: 'Your mechanic is now diagnosing your vehicle.',                  color: '#0fb5a4' },
+  repairing:  { title: 'Repair in progress',                 sub: 'Your mechanic is actively working on your car.',                 color: '#ff6a3d' },
+  completed:  { title: 'Repair complete — review the quote', sub: 'Your mechanic has submitted the final cost for your approval.',  color: '#16a34a' },
+  approved:   { title: 'Quote approved — payment complete',  sub: 'Your payment has been processed successfully.',                  color: '#16a34a' },
+};
 
-  // Get real GPS location
+export default function CustomerActiveJob({ jobId }) {
+  const [job, setJob]               = useState(null);
+  const [myLocation, setMyLocation] = useState(null);
+  const [locError, setLocError]     = useState(false);
+
   useEffect(() => {
     if (!navigator.geolocation) { setLocError(true); return; }
     navigator.geolocation.getCurrentPosition(
       pos => setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      ()  => { setLocError(true); setMyLocation({ lat: 9.0765, lng: 7.3986 }); }, // fallback: Abuja
+      ()  => { setLocError(true); setMyLocation({ lat: 9.0765, lng: 7.3986 }); },
       { timeout: 8000 }
     );
   }, []);
@@ -25,133 +35,94 @@ export default function CustomerActiveJob({ jobId }) {
   if (!job) return null;
 
   const mechLocation = job.mechLocation || null;
-
   const markers = [];
   if (myLocation)   markers.push({ lat: myLocation.lat,   lng: myLocation.lng,   label: 'A', title: 'You' });
   if (mechLocation) markers.push({ lat: mechLocation.lat, lng: mechLocation.lng, label: 'B', title: 'Mechanic' });
-
-  const route = (myLocation && mechLocation)
-    ? { origin: mechLocation, destination: myLocation }
-    : null;
-
-  const STATUS_LABELS = {
-    pending:    { title: 'Finding a mechanic nearby',          sub: `Searching for a professional for your ${job.service?.nm} issue.`, color: '#276EF1' },
-    accepted:   { title: 'Mechanic is on the way',             sub: 'A verified professional is heading to your location.',             color: '#05944F' },
-    diagnosing: { title: 'Mechanic has arrived',               sub: 'Your mechanic is now diagnosing your vehicle.',                    color: '#276EF1' },
-    repairing:  { title: 'Repair in progress',                 sub: 'Your mechanic is actively working on your car.',                   color: '#276EF1' },
-    completed:  { title: 'Repair complete — review the quote', sub: 'Your mechanic has submitted the final cost for your approval.',    color: '#05944F' },
-    approved:   { title: 'Quote approved — proceed to pay',    sub: 'Complete the payment below to finalise.',                          color: '#05944F' },
-  };
-
+  const route = (myLocation && mechLocation) ? { origin: mechLocation, destination: myLocation } : null;
   const st = STATUS_LABELS[job.status] || STATUS_LABELS['pending'];
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 200,
-      display: 'flex', flexDirection: 'column',
-      background: '#000000',
-      fontFamily: "'Inter', sans-serif",
-    }}>
-      {/* ── Full-screen map ── */}
-      <div style={{ flex: 1, position: 'relative' }}>
+    <div style={{ position:'fixed', inset:0, zIndex:200, display:'flex', flexDirection:'column', background:'var(--bg)', fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+
+      {/* Full-screen map */}
+      <div style={{ flex:1, position:'relative' }}>
         <MapView
-          center={myLocation || { lat: 9.0765, lng: 7.3986 }}
-          markers={markers}
-          route={route}
-          zoom={14}
-          style={{ height: '100%' }}
+          center={myLocation || { lat:9.0765, lng:7.3986 }}
+          markers={markers} route={route} zoom={14}
+          style={{ height:'100%' }}
         />
 
-        {/* Service badge top-left */}
+        {/* Service badge */}
         <div style={{
-          position: 'absolute', top: '16px', left: '16px',
-          background: '#1C1C1E',
-          borderRadius: '20px',
-          padding: '8px 16px',
-          display: 'flex', alignItems: 'center', gap: '8px',
-          fontSize: '13px', fontWeight: '600', color: '#FFFFFF',
+          position:'absolute', top:'16px', left:'16px',
+          background:'rgba(14,19,32,.85)', backdropFilter:'blur(8px)',
+          borderRadius:'20px', padding:'8px 16px',
+          fontSize:'13px', fontWeight:'700', color:'#fff',
         }}>
           {job.service?.nm} Request
         </div>
 
-        {/* GPS warning */}
         {locError && (
-          <div style={{
-            position: 'absolute', top: '16px', right: '16px',
-            fontSize: '12px', color: '#E11900', fontWeight: '500',
-          }}>
+          <div style={{ position:'absolute', top:'16px', right:'16px', fontSize:'12px', color:'#e8481f', fontWeight:'600', background:'rgba(255,255,255,.9)', padding:'4px 10px', borderRadius:'20px' }}>
             GPS unavailable
           </div>
         )}
       </div>
 
-      {/* ── Bottom status panel ── */}
+      {/* Bottom panel */}
       <div style={{
-        background: '#1C1C1E',
-        borderTopLeftRadius: '16px', borderTopRightRadius: '16px',
-        padding: '24px',
+        background:'var(--surface)',
+        borderTopLeftRadius:'24px', borderTopRightRadius:'24px',
+        padding:'24px',
+        boxShadow:'0 -8px 32px -8px rgba(14,19,32,.15)',
+        maxHeight:'55vh', overflowY:'auto',
       }}>
-        {/* Status indicator */}
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-            <span style={{
-              width: '8px', height: '8px', borderRadius: '50%',
-              background: st.color, flexShrink: 0,
-            }} />
-            <span style={{ fontWeight: '600', fontSize: '16px', color: '#FFFFFF' }}>{st.title}</span>
+        {/* Status */}
+        <div style={{ marginBottom:'20px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'4px' }}>
+            <span style={{ width:'10px', height:'10px', borderRadius:'50%', background:st.color, flexShrink:0, boxShadow:`0 0 0 3px ${st.color}30` }} />
+            <span style={{ fontWeight:'800', fontSize:'16px', color:'var(--ink)', letterSpacing:'-.2px' }}>{st.title}</span>
           </div>
-          <div style={{ fontSize: '13px', color: '#8E8E93', marginLeft: '18px' }}>{st.sub}</div>
+          <div style={{ fontSize:'13px', color:'var(--slate)', marginLeft:'20px' }}>{st.sub}</div>
         </div>
 
-        {/* Animated waiting bar & Cancel (pending only) */}
+        {/* Pending — progress bar + cancel */}
         {job.status === 'pending' && (
           <div>
-            <div style={{ height: '3px', background: '#2C2C2E', borderRadius: '2px', overflow: 'hidden', marginBottom: '16px' }}>
-              <div style={{ height: '100%', width: '35%', background: '#276EF1', borderRadius: '2px', animation: 'sweep 1.6s infinite ease-in-out' }} />
+            <div style={{ height:'4px', background:'var(--line)', borderRadius:'4px', overflow:'hidden', marginBottom:'16px' }}>
+              <div style={{ height:'100%', width:'40%', background:'linear-gradient(90deg,#ff8a4c,#e8481f)', borderRadius:'4px', animation:'sweep 1.6s infinite ease-in-out' }} />
             </div>
-            <button
-              onClick={() => {
-                if (window.confirm('Are you sure you want to cancel this request?')) {
-                  updateJobStatus(job.id, 'cancelled');
-                }
-              }}
-              style={{
-                width: '100%', padding: '14px',
-                fontSize: '14px', fontWeight: '500', color: '#E11900',
-                background: 'none',
-                border: '1px solid #3A3A3C',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontFamily: "'Inter', sans-serif",
-              }}
-            >
-              Cancel request
-            </button>
+            <style>{`@keyframes sweep{0%{transform:translateX(-150%)}100%{transform:translateX(350%)}}`}</style>
+            <button onClick={() => { if(window.confirm('Cancel this request?')) updateJobStatus(job.id,'cancelled'); }} style={{
+              width:'100%', padding:'14px', fontSize:'14px', fontWeight:'600', color:'#e8481f',
+              background:'rgba(255,106,61,.06)', border:'1.5px solid rgba(255,106,61,.2)',
+              borderRadius:'14px', cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif",
+            }}>Cancel request</button>
           </div>
         )}
 
-        {/* Mechanic card (once accepted) */}
-        {(job.status !== 'pending') && job.mechanicId && (
+        {/* Mechanic card (accepted+) */}
+        {job.status !== 'pending' && job.mechanicId && (
           <div style={{
-            background: '#2C2C2E',
-            borderRadius: '12px', padding: '14px 16px',
-            display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '16px'
+            background:'var(--bg)', border:'1.5px solid var(--line)',
+            borderRadius:'16px', padding:'14px 16px',
+            display:'flex', gap:'12px', alignItems:'center', marginBottom:'16px',
           }}>
             <div style={{
-              width: '44px', height: '44px', borderRadius: '50%',
-              background: '#3A3A3C', display: 'grid', placeItems: 'center',
-              fontSize: '16px', fontWeight: '600', color: '#FFFFFF', flexShrink: 0,
+              width:'44px', height:'44px', borderRadius:'13px',
+              background:'linear-gradient(150deg,#ff8a4c,#e8481f)',
+              display:'grid', placeItems:'center',
+              fontSize:'16px', fontWeight:'800', color:'#fff', flexShrink:0,
             }}>M</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: '600', fontSize: '15px', color: '#FFFFFF' }}>Your Mechanic</div>
-              <div style={{ fontSize: '13px', color: '#8E8E93', marginTop: '2px' }}>{job.service?.nm} Specialist</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontWeight:'700', fontSize:'15px', color:'var(--ink)' }}>Your Mechanic</div>
+              <div style={{ fontSize:'12px', color:'var(--slate)', marginTop:'2px' }}>{job.service?.nm} Specialist · En route</div>
             </div>
             <a href="tel:" style={{
-              width: '40px', height: '40px', borderRadius: '50%',
-              background: '#2C2C2E', border: '1px solid #3A3A3C',
-              display: 'grid', placeItems: 'center',
-              fontSize: '18px', textDecoration: 'none', color: '#05944F',
-            }}>&#9742;</a>
+              width:'40px', height:'40px', borderRadius:'50%',
+              background:'rgba(22,163,74,.1)', border:'1.5px solid rgba(22,163,74,.2)',
+              display:'grid', placeItems:'center', fontSize:'18px', textDecoration:'none', color:'#16a34a',
+            }}>☎</a>
           </div>
         )}
 
@@ -160,55 +131,41 @@ export default function CustomerActiveJob({ jobId }) {
           <QuoteApproval job={job} />
         )}
 
-        {/* TEST MODE OVERRIDE */}
+        {/* TEST MODE */}
         {job.status !== 'pending' && (
-          <div style={{ marginTop: '24px', padding: '16px', border: '1px dashed #3A3A3C', borderRadius: '8px' }}>
-            <div style={{ fontSize: '11px', fontWeight: '600', color: '#8E8E93', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              Test Mode (Simulate Mechanic)
-            </div>
-            
+          <div style={{ marginTop:'20px', padding:'14px', border:'1.5px dashed var(--line)', borderRadius:'14px' }}>
+            <div className="label" style={{ marginBottom:'10px' }}>Test Mode — Simulate Mechanic</div>
             {job.status === 'accepted' && (
-              <button onClick={() => updateJobStatus(job.id, 'diagnosing')} style={testBtnStyle}>Simulate: Arrived</button>
+              <button onClick={() => updateJobStatus(job.id,'diagnosing')} style={testBtn}>Simulate: Arrived & diagnosing</button>
             )}
             {job.status === 'diagnosing' && (
-              <button onClick={() => updateJobStatus(job.id, 'repairing')} style={testBtnStyle}>Simulate: Start repair</button>
+              <button onClick={() => updateJobStatus(job.id,'repairing')} style={testBtn}>Simulate: Start repair</button>
             )}
             {job.status === 'repairing' && (
               <button onClick={async () => {
-                const { doc, updateDoc } = await import('firebase/firestore');
-                const { db } = await import('../firebase');
-                await updateDoc(doc(db, 'jobs', job.id), {
-                  status: 'completed',
-                  cost: { items: [{ name: 'Diagnostics & Service', price: '12000' }], total: 12000, notes: 'Test mode' }
+                await updateDoc(doc(db,'jobs',job.id), {
+                  status:'completed',
+                  cost:{ items:[{ name:'Service charge', price:'8000' },{ name:'Parts replacement', price:'32000' }], total:40000, notes:'Test mode' }
                 });
-              }} style={testBtnStyle}>Simulate: Submit Quote (₦12,000)</button>
+              }} style={testBtn}>Simulate: Submit quote (₦40,000)</button>
             )}
-            {job.status === 'completed' && (
-              <div style={{ fontSize: '13px', color: '#8E8E93' }}>Please approve the quote above.</div>
-            )}
+            {job.status === 'completed' && <div style={{ fontSize:'13px', color:'var(--slate)' }}>Approve the quote above to pay.</div>}
             {job.status === 'approved' && (
-              <button onClick={() => updateJobStatus(job.id, 'finished')} style={testBtnStyle}>Finish & Return to Home</button>
+              <button onClick={() => updateJobStatus(job.id,'finished')} style={testBtn}>Finish & return home</button>
             )}
           </div>
         )}
-
-        <style>{`
-          @keyframes sweep {
-            0%   { transform: translateX(-150%); }
-            100% { transform: translateX(350%); }
-          }
-        `}</style>
       </div>
     </div>
   );
 }
 
-const testBtnStyle = {
-  width: '100%', padding: '12px',
-  background: '#2C2C2E', color: '#FFFFFF',
-  border: '1px solid #3A3A3C', borderRadius: '6px',
-  fontSize: '13px', fontWeight: '500',
-  cursor: 'pointer', fontFamily: "'Inter', sans-serif"
+const testBtn = {
+  width:'100%', padding:'12px',
+  background:'var(--bg)', color:'var(--ink)',
+  border:'1.5px solid var(--line)', borderRadius:'12px',
+  fontSize:'13px', fontWeight:'600',
+  cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif",
 };
 
 function QuoteApproval({ job }) {
@@ -222,34 +179,22 @@ function QuoteApproval({ job }) {
   }
 
   return (
-    <div>
-      <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: '#8E8E93', marginBottom: '12px', fontWeight: '600' }}>
-        Cost Breakdown
-      </div>
-      {job.cost.items.map((item, i) => (
-        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #2C2C2E', fontSize: '14px' }}>
-          <span style={{ color: '#8E8E93' }}>{item.name}</span>
-          <span style={{ color: '#FFFFFF', fontWeight: '500' }}>{'\u20A6'}{item.price?.toLocaleString()}</span>
+    <div style={{ marginBottom:'16px' }}>
+      <div className="label" style={{ marginBottom:'12px' }}>Cost Breakdown</div>
+      <div style={{ background:'var(--bg)', border:'1.5px solid var(--line)', borderRadius:'16px', padding:'14px', marginBottom:'14px' }}>
+        {job.cost.items.map((item, i) => (
+          <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'10px 0', borderBottom: i < job.cost.items.length-1 ? '1px solid var(--line)' : 'none', fontSize:'14.5px' }}>
+            <span style={{ color:'var(--slate)' }}>{item.name}</span>
+            <span style={{ fontWeight:'600', color:'var(--ink)' }}>₦{Number(item.price).toLocaleString()}</span>
+          </div>
+        ))}
+        <div style={{ display:'flex', justifyContent:'space-between', paddingTop:'12px', fontWeight:'800', fontSize:'19px' }}>
+          <span>Total</span>
+          <span>₦{total.toLocaleString()}</span>
         </div>
-      ))}
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 0 20px', fontWeight: '700', fontSize: '18px' }}>
-        <span style={{ color: '#FFFFFF' }}>Total</span>
-        <span style={{ color: '#FFFFFF' }}>{'\u20A6'}{total.toLocaleString()}</span>
       </div>
-      <button
-        onClick={approve}
-        disabled={approving}
-        style={{
-          width: '100%', padding: '16px',
-          background: '#276EF1', color: '#FFFFFF',
-          border: 'none', borderRadius: '8px',
-          fontSize: '15px', fontWeight: '600',
-          cursor: approving ? 'default' : 'pointer',
-          opacity: approving ? 0.6 : 1,
-          fontFamily: "'Inter', sans-serif",
-        }}
-      >
-        {approving ? 'Approving...' : `Approve & Pay \u20A6${total.toLocaleString()}`}
+      <button onClick={approve} disabled={approving} className="btn btn-primary" style={{ opacity: approving ? .6 : 1 }}>
+        {approving ? 'Processing…' : `Approve & Pay ₦${total.toLocaleString()}`} {!approving && <span>→</span>}
       </button>
     </div>
   );
