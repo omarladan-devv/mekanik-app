@@ -35,10 +35,12 @@ const MECH_COLORS = [
 export default function CustomerDashboard() {
   const { currentUser } = useAuth();
   const [selectedService, setSelectedService] = useState(null);
+  const [issueDesc, setIssueDesc]             = useState('');
   const [mechanics, setMechanics]             = useState([]);
   const [loadingMechs, setLoadingMechs]       = useState(false);
   const [loading, setLoading]                 = useState(false);
   const [activeJob, setActiveJob]             = useState(undefined);
+  const [showMechList, setShowMechList]       = useState(false);
 
   useEffect(() => {
     const unsub = listenToActiveJobForCustomer(currentUser.uid, job => {
@@ -49,6 +51,11 @@ export default function CustomerDashboard() {
 
   async function handleServiceSelect(svc) {
     setSelectedService(svc);
+  }
+
+  async function handleContinue() {
+    if (!selectedService) return;
+    setShowMechList(true);
     setLoadingMechs(true);
     try {
       const available = await getAvailableMechanics();
@@ -86,12 +93,11 @@ export default function CustomerDashboard() {
 
   if (activeJob) return <CustomerActiveJob jobId={activeJob.id} />;
 
-  // Mechanic list
-  if (selectedService) {
+  if (showMechList && selectedService) {
     return (
       <div>
         <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'24px' }}>
-          <button onClick={() => setSelectedService(null)} style={{
+          <button onClick={() => setShowMechList(false)} style={{
             width:'40px', height:'40px', borderRadius:'13px',
             border:'1.5px solid var(--line)', background:'var(--surface)',
             display:'grid', placeItems:'center', cursor:'pointer', fontSize:'16px',
@@ -158,31 +164,79 @@ export default function CustomerDashboard() {
 
       {/* Service grid */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'12px' }}>
-        {SVCS.map(s => (
-          <div key={s.id} onClick={() => handleServiceSelect(s)} style={{
-            background: 'var(--surface)',
-            border: '1.5px solid var(--line)',
-            borderRadius: '20px',
-            padding: '16px',
-            cursor: 'pointer',
-            transition: 'transform .18s, box-shadow .2s',
-            boxShadow: 'var(--shadow-sm)',
-          }}
-          onMouseDown={e => e.currentTarget.style.transform='scale(.97)'}
-          onMouseUp={e => e.currentTarget.style.transform='scale(1)'}
-          onTouchStart={e => e.currentTarget.style.transform='scale(.97)'}
-          onTouchEnd={e => e.currentTarget.style.transform='scale(1)'}
-          >
-            <div style={{
-              width:'42px', height:'42px', borderRadius:'12px',
-              background:'var(--bg)', display:'grid', placeItems:'center',
-              fontSize:'21px', marginBottom:'12px',
-            }}>{s.ic}</div>
-            <div style={{ fontWeight:'700', fontSize:'14px', letterSpacing:'-.2px', marginBottom:'3px' }}>{s.nm}</div>
-            <div style={{ fontSize:'11.5px', color:'var(--slate-2)', lineHeight:1.35 }}>{s.ds}</div>
-          </div>
-        ))}
+        {SVCS.map(s => {
+          const isSelected = selectedService?.id === s.id;
+          return (
+            <div key={s.id} onClick={() => handleServiceSelect(s)} style={{
+              background: 'var(--surface)',
+              border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--line)'}`,
+              borderRadius: '20px',
+              padding: '16px',
+              cursor: 'pointer',
+              transition: 'transform .18s, box-shadow .2s, border-color .2s',
+              boxShadow: isSelected ? '0 0 0 4px rgba(255,106,61,.1)' : 'var(--shadow-sm)',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+            onMouseDown={e => e.currentTarget.style.transform='scale(.97)'}
+            onMouseUp={e => e.currentTarget.style.transform='scale(1)'}
+            onTouchStart={e => e.currentTarget.style.transform='scale(.97)'}
+            onTouchEnd={e => e.currentTarget.style.transform='scale(1)'}
+            >
+              <div style={{
+                width:'42px', height:'42px', borderRadius:'12px',
+                background: isSelected ? 'linear-gradient(150deg,var(--accent-2),var(--accent-deep))' : 'var(--bg)',
+                display:'grid', placeItems:'center',
+                fontSize:'21px', marginBottom:'12px',
+                transition: '.2s',
+                color: isSelected ? '#fff' : 'inherit',
+              }}>{s.ic}</div>
+              <div style={{ fontWeight:'700', fontSize:'14px', letterSpacing:'-.2px', marginBottom:'3px' }}>{s.nm}</div>
+              <div style={{ fontSize:'11.5px', color:'var(--slate-2)', lineHeight:1.35 }}>{s.ds}</div>
+              {isSelected && (
+                <div style={{
+                  position: 'absolute', top: '14px', right: '14px',
+                  width: '22px', height: '22px', borderRadius: '50%',
+                  background: 'var(--accent)', color: '#fff',
+                  display: 'grid', placeItems: 'center', fontSize: '12px'
+                }}>✓</div>
+              )}
+            </div>
+          );
+        })}
       </div>
+
+      <span className="label" style={{ marginTop: '22px' }}>Describe the issue</span>
+      <textarea
+        className="field"
+        rows="2"
+        placeholder="e.g. Car won't start, hearing a clicking sound…"
+        value={issueDesc}
+        onChange={e => setIssueDesc(e.target.value)}
+      />
+      
+      <div style={{
+        marginTop:'11px', border:'1.5px dashed var(--line)', borderRadius:'15px',
+        padding:'16px', textAlign:'center', color:'var(--slate)', fontSize:'13px',
+        cursor:'pointer', background:'var(--surface)', display:'flex',
+        alignItems:'center', justifyContent:'center', gap:'8px',
+      }}>
+        📷 Add a photo or video <span style={{ color:'var(--slate-2)' }}>(optional)</span>
+      </div>
+
+      <div style={{ height: '32px' }} />
+
+      <button
+        className="btn"
+        disabled={!selectedService}
+        onClick={handleContinue}
+        style={{
+          opacity: selectedService ? 1 : 0.4,
+          pointerEvents: selectedService ? 'auto' : 'none',
+        }}
+      >
+        Continue <span>→</span>
+      </button>
     </div>
   );
 }
