@@ -40,7 +40,7 @@ export default function CustomerDashboard() {
   const [loadingMechs, setLoadingMechs]       = useState(false);
   const [loading, setLoading]                 = useState(false);
   const [activeJob, setActiveJob]             = useState(undefined);
-  const [showMechList, setShowMechList]       = useState(false);
+  const [step, setStep]                       = useState('select'); // 'select', 'location', 'mechanics'
 
   useEffect(() => {
     const unsub = listenToActiveJobForCustomer(currentUser.uid, job => {
@@ -55,7 +55,11 @@ export default function CustomerDashboard() {
 
   async function handleContinue() {
     if (!selectedService) return;
-    setShowMechList(true);
+    setStep('location');
+  }
+
+  async function handleFindMechanics() {
+    setStep('mechanics');
     setLoadingMechs(true);
     try {
       const available = await getAvailableMechanics();
@@ -93,11 +97,78 @@ export default function CustomerDashboard() {
 
   if (activeJob) return <CustomerActiveJob jobId={activeJob.id} />;
 
-  if (showMechList && selectedService) {
+  if (step === 'location' && selectedService) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 'calc(100vh - 120px)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'16px' }}>
+          <button onClick={() => setStep('select')} style={{
+            width:'40px', height:'40px', borderRadius:'13px',
+            border:'1.5px solid var(--line)', background:'var(--surface)',
+            display:'grid', placeItems:'center', cursor:'pointer', fontSize:'16px',
+            transition:'.2s', flexShrink: 0,
+          }}>←</button>
+          <div style={{ fontWeight:'700', fontSize:'17px', letterSpacing:'-.3px' }}>Confirm your location</div>
+        </div>
+
+        <div style={{
+          height: '240px', background: '#e9edf2', borderRadius: '22px', position: 'relative', overflow: 'hidden',
+          marginBottom: '20px'
+        }}>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'repeating-linear-gradient(0deg,#dde3ea 0 1px,transparent 1px 40px), repeating-linear-gradient(90deg,#dde3ea 0 1px,transparent 1px 40px)'
+          }} />
+          <div style={{ position: 'absolute', top: '84px', left: 0, right: 0, height: '18px', background: '#fff', boxShadow: '0 0 0 1px #e3e8ee' }} />
+          <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: '18px', marginLeft: '-9px', background: '#fff', boxShadow: '0 0 0 1px #e3e8ee' }} />
+          
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg,var(--bg) 1%,transparent 28%)' }} />
+          
+          <div style={{ position: 'absolute', left: '50%', top: '55%', transform: 'translate(-50%,-100%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{
+              width: '34px', height: '34px', borderRadius: '50% 50% 50% 2px', rotate: '45deg',
+              background: 'var(--ink)', display: 'grid', placeItems: 'center', boxShadow: 'var(--shadow)'
+            }}>
+              <span style={{ rotate: '-45deg', fontSize: '15px' }}>📍</span>
+            </div>
+            <div style={{
+              background: '#fff', fontSize: '9.5px', fontWeight: '700', padding: '3px 9px', borderRadius: '20px',
+              marginTop: '8px', boxShadow: 'var(--shadow-sm)', whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '.5px'
+            }}>YOU ARE HERE</div>
+          </div>
+          <div style={{
+            position: 'absolute', left: '50%', top: '55%', width: '34px', height: '34px', borderRadius: '50%',
+            background: 'rgba(255,106,61,.35)', transform: 'translate(-50%,-50%)',
+            animation: 'pulse 2s infinite'
+          }} />
+        </div>
+
+        <div className="card" style={{ display: 'flex', gap: '13px', alignItems: 'center', marginBottom: '14px' }}>
+          <div className="ava" style={{ background: 'var(--ink)' }}>📍</div>
+          <div>
+            <div style={{ fontWeight: '700', fontSize: '15px' }}>Wuse 2, Abuja</div>
+            <div className="sub" style={{ fontSize: '12.5px' }}>15 Adetokunbo Ademola Crescent</div>
+          </div>
+        </div>
+
+        <div className="sub" style={{ fontSize: '13px' }}>
+          Drag the pin or edit the address if this isn't exactly right.
+        </div>
+
+        <div style={{ flex: 1 }} />
+        <div style={{ marginTop: '24px' }}>
+          <button className="btn" onClick={handleFindMechanics}>
+            Find mechanics nearby <span>→</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'mechanics' && selectedService) {
     return (
       <div>
         <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'24px' }}>
-          <button onClick={() => setShowMechList(false)} style={{
+          <button onClick={() => setStep('location')} style={{
             width:'40px', height:'40px', borderRadius:'13px',
             border:'1.5px solid var(--line)', background:'var(--surface)',
             display:'grid', placeItems:'center', cursor:'pointer', fontSize:'16px',
