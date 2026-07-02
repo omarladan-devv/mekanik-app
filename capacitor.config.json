@@ -1,6 +1,6 @@
 {
   "appId": "com.mekanik.app",
-  "appName": "Mekanik",
+  "appName": "Mekanik - On Demand",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "ios": {
