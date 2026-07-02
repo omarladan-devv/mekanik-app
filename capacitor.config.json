@@ -1,0 +1,36 @@
+{
+  "appId": "com.mekanik.app",
+  "appName": "Mekanik",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "ios": {
+    "backgroundColor": "#1a0f05",
+    "contentInset": "always",
+    "scrollEnabled": false,
+    "preferredContentMode": "mobile"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#1a0f05",
+      "iosSpinnerStyle": "small",
+      "spinnerColor": "#FF6A3D",
+      "showSpinner": true,
+      "androidSpinnerStyle": "small",
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#1a0f05",
+      "overlaysWebView": false
+    },
+    "Geolocation": {
+      "permissions": {
+        "ios": "NSLocationWhenInUseUsageDescription",
+        "android": "ACCESS_FINE_LOCATION"
+      }
+    }
+  }
+}
