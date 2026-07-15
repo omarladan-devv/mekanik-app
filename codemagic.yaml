@@ -7,6 +7,9 @@ workflows:
       node: latest
       xcode: latest
       cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.mekanik.app
     scripts:
       - name: Install npm dependencies
         script: npm install
@@ -15,14 +18,9 @@ workflows:
       - name: Sync Capacitor iOS project
         script: npx cap sync ios
       - name: Set up code signing
-        script: |
-          # This command uses the code signing configuration you set up in the Codemagic UI
-          xcode-project use-profiles
+        script: xcode-project use-profiles
       - name: Build IPA
-        script: |
-          xcode-project build-ipa \
-            --workspace ios/App/App.xcworkspace \
-            --scheme App
+        script: xcode-project build-ipa --workspace "ios/App/App.xcworkspace" --scheme "App"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
