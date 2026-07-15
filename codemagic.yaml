@@ -7,6 +7,8 @@ workflows:
       node: latest
       xcode: latest
       cocoapods: default
+      groups:
+        - apple
       vars:
         BUNDLE_ID: "com.mekanik.app"
     scripts:
